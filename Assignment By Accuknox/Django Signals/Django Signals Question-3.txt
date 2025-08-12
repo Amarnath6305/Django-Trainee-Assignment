@@ -1,0 +1,31 @@
+3.By default do Django signals run in the same database transaction as the caller?
+
+Yes,signals like post_save and pre_save execute within the same transaction as the caller unless explicitly covered in a separate transaction.
+
+
+signals.py
+
+from django.db import connection
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from .models import MyModel
+
+@receiver(post_save, sender=MyModel)
+def transaction_check_handler(sender, instance, **kwargs):
+    print("Signal inside transaction:", connection.in_atomic_block)
+
+views.py
+
+from django.db import transaction
+from django.shortcuts import HttpResponse
+from .models import MyModel
+
+def transaction_test_view(request):
+    with transaction.atomic():
+        MyModel.objects.create(name="TransactionTest")
+    return HttpResponse("Transaction test done")
+
+output:
+
+Signal inside transaction: True
+
